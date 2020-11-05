@@ -1,0 +1,11 @@
+---
+- name: Install net-tools on all hosts
+  hosts: all
+  become: yes
+  vars:
+          app_name: net-tools
+  tasks:
+          - name: install {{ app_name }}
+            package:
+                    name: "{{ app_name }}"
+                    state: present

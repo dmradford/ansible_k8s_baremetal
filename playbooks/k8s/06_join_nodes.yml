@@ -1,0 +1,6 @@
+---
+  - hosts: k8s_nodes
+    become: true
+    tasks:
+            - name: Join Nodes
+              shell: "{{ token }}"

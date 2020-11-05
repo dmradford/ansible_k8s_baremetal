@@ -1,0 +1,57 @@
+---
+  - hosts: k8s
+    become: true
+    vars:
+    tasks:
+            - name: Configure system
+              block:
+                      - name: Disable swap
+                        shell: swapoff -a
+
+                      - name: Disable swap in fstab
+                        replace:
+                                path: /etc/fstab
+                                regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+                                replace: '# \1'
+
+                      - name: Disable swap in sysctl.conf
+                        ansible.posix.sysctl:
+                                name: vm.swappiness
+                                value: 0
+                                reload: yes
+            - name: Install Kubernetes
+              block:
+                      - name: Add Kubernetes GPG key
+                        apt_key:
+                                url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+                                state: present
+                                
+                      - name: Add Kubernetes repository to package manager
+                        apt_repository:
+                                repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+                                state: present
+
+                      - name: Install Kubernetes packages
+                        apt:
+                                name: "{{ item }}"
+                                state: present
+                        loop: [kubelet, kubeadm, kubectl, keepalived]
+
+            - name: Start services
+              block:
+                      - name: Enable keepalived
+                        systemd:
+                                name: keepalived
+                                state: started
+            - name: Configure kubeadm
+              block:
+                      - name: Add cgroup env to Kubernetes
+                        lineinfile:
+                                path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+                                line: "Environment=cgroup-driver=systemd/cgroup-driver=cgroupfs"
+                                insertafter: '^(Environment=.*\.yaml\"\n)'
+                                state: present
+
+            - name: Open port 6443 for joining nodes
+              shell: "sudo iptables -A INPUT -p tcp --dport 6443 -j ACCEPT"
+              when: "'k8s_masters' in group_names"

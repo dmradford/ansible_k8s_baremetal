@@ -1,0 +1,5 @@
+---
+  - name: Install kubeadm
+    hosts: k8s---
+      - name: Install kubeadm
+        hosts: k8s

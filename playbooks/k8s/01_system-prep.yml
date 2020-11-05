@@ -1,0 +1,67 @@
+---
+  - name: Prep systems for Kubernetes install
+    hosts: k8s
+    become: yes
+    vars:
+            modules: [br_netfilter]
+    tasks:
+        - name: Prep base modules
+          block:
+                - name: Install {{ item }}
+                  modprobe:
+                        name: "{{ item }}"
+                  loop: "{{ modules }}"
+        - name: Open required ports
+          block:
+                - name: Open required TCP ports for control nodes
+                  iptables:
+                          chain: INPUT
+                          state: present
+                          protocol: tcp
+                          destination_port: "{{ item }}"
+                          ctstate: NEW
+                          syn: match
+                          jump: ACCEPT
+                          comment: 'Required ports for control nodes'
+                  loop: ['6443', '2379:2380', '10250', '10251', '10252']
+                  when: "'k8s_masters' in group_names"
+                  
+                - name: Open required TCP ports for worker nodes
+                  iptables:
+                          chain: INPUT
+                          state: present
+                          protocol: tcp
+                          destination_port: "{{ item }}"
+                          ctstate: NEW
+                          syn: match
+                          jump: ACCEPT
+                          comment: 'Required ports for control nodes'
+                  loop: ['10250', '30000:32767']
+                  when: "'k8s_nodes' in group_names"
+
+          rescue:
+                - name: Revert TCP ports for control nodes
+                  iptables:
+                          chain: INPUT
+                          state: absent
+                          protocol: tcp
+                          destination_port: "{{ item }}"
+                          ctstate: NEW
+                          syn: match
+                          jump: ACCEPT
+                          comment: 'Required ports for control nodes'
+                  loop: ['6443', '2379:2380', '10250', '10251', '10252']
+                  when: "'k8s_masters' in group_names"
+                  
+                - name: Revert TCP ports for worker nodes
+                  iptables:
+                          chain: INPUT
+                          state: absent
+                          protocol: tcp
+                          destination_port: "{{ item }}"
+                          ctstate: NEW
+                          syn: match
+                          jump: ACCEPT
+                          comment: 'Required ports for control nodes'
+                  loop: ['10250', '30000:32767']
+                  when: "'k8s_nodes' in group_names"

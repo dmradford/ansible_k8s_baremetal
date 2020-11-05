@@ -1,0 +1,13 @@
+---
+  - hosts: k8s_masters
+    become: no
+    vars:
+            config: "flannel.yml"
+    tasks:
+            - name: Copy config file
+              copy:
+                      src: "/home/ffadmin/ansible/playbooks/k8s/{{ config }}"
+                      dest: /home/ffadmin/{{ config }}
+
+            - name: Apply config
+              shell: "kubectl apply -f /home/ffadmin/{{ config }}"

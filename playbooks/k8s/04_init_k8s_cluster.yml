@@ -1,0 +1,33 @@
+---
+  - hosts: k8s_masters
+    become: true
+    vars:
+            cidr: '10.20.0.0/16'
+            apiaddr: '10.10.8.1'
+    tasks:
+            - name: Initialize Kubernetes master nodes
+              block:
+                      - name: Init masters
+                        shell: 'kubeadm init --pod-network-cidr={{ cidr }} --apiserver-advertise-address={{ apiaddr }}'
+                        register: shell_result
+
+                      - name: Initialization response
+                        debug:
+                                var: shell_result.stdout_lines
+                                
+                      - name: Create config directory
+                        file:
+                                path: "{{ lookup('env', 'HOME') }}/.kube"
+                                state: directory
+
+                      - name: Copy default configs
+                        copy:
+                                remote_src: yes
+                                src: /etc/kubernetes/admin.conf
+                                dest: "{{ lookup('env', 'HOME') }}/.kube/config"
+
+                      - name: Set config permissions
+                        file:
+                                path: "{{ lookup('env', 'HOME') }}/.kube/config"
+                                owner: ffadmin
+                                group: ffadmin

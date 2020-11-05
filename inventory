@@ -1,0 +1,12 @@
+[k8s:children]
+k8s_masters
+k8s_nodes
+
+[k8s_masters]
+fflok801
+
+[k8s_nodes]
+fflok8[02:04]
+
+[databaseservers]
+10.10.8.5

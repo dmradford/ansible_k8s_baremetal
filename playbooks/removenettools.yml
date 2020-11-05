@@ -1,0 +1,9 @@
+---
+- name: Remove net-tools on all hosts
+  hosts: all
+  become: yes
+  tasks:
+          - name: install net-tools
+            package:
+                    name: net-tools
+                    state: absent
